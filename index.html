@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevator System</title>
+    <style>
+        .floor {
+            margin-bottom: 10px;
+        }
+
+        .call-button {
+            background-color: green;
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .elevator {
+            width: 50px;
+            height: 50px;
+            background-color: black;
+            position: absolute;
+            left: 200px;
+        }
+
+        .waiting {
+            background-color: red;
+        }
+
+        .arrived {
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="floors">
+        <!-- Generate floors dynamically -->
+    </div>
+
+    <!-- Example elevators -->
+    <div class="elevator" id="elevator-1"></div>
+    <div class="elevator" id="elevator-2" style="top: 100px;"></div>
+    <div class="elevator" id="elevator-3" style="top: 200px;"></div>
+    <div class="elevator" id="elevator-4" style="top: 300px;"></div>
+    <div class="elevator" id="elevator-5" style="top: 400px;"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const numberOfFloors = 10;
+        const elevators = $('.elevator');
+        let callQueue = [];
+
+        // Initialize floors with call buttons
+        for (let i = 0; i < numberOfFloors; i++) {
+            $('#floors').append(`
+                <div class="floor">
+                    <span>Floor ${i}</span>
+                    <button class="call-button" data-floor="${i}">Call</button>
+                </div>
+            `);
+        }
+
+        // Handle call button click
+        $('.call-button').on('click', function () {
+            const floor = $(this).data('floor');
+            const button = $(this);
+
+            button.text('Waiting').addClass('waiting').removeClass('call-button');
+            callQueue.push({ floor, button });
+
+            processElevatorCall();
+        });
+
+        function processElevatorCall() {
+            if (callQueue.length > 0) {
+                const { floor, button } = callQueue.shift();
+                const closestElevator = findClosestElevator(floor);
+
+                if (closestElevator) {
+                    moveToFloor(closestElevator, floor, button);
+                } else {
+                    // Re-add the call to the queue if no elevator is available
+                    callQueue.push({ floor, button });
+                }
+            }
+        }
+
+        function findClosestElevator(floor) {
+            let closestElevator = null;
+            let minDistance = numberOfFloors + 1; // Max possible distance
+
+            elevators.each(function () {
+                const elevator = $(this);
+                const currentFloor = parseInt(elevator.css('top')) / 50; // Calculate current floor based on position
+                const distance = Math.abs(currentFloor - floor);
+
+                if (distance < minDistance && !elevator.is(':animated')) {
+                    minDistance = distance;
+                    closestElevator = elevator;
+                }
+            });
+
+            return closestElevator;
+        }
+
+        function moveToFloor(elevator, floor, button) {
+            const destinationTop = floor * 50;
+
+            elevator.animate({ top: destinationTop }, {
+                duration: 1000, // Adjust for smooth movement
+                step: function (now) {
+                    // Additional logic during movement (e.g., sound, animation)
+                },
+                complete: function () {
+                    elevator.css('background-color', 'red');
+                    makeSound();
+                    button.text('Arrived').addClass('arrived').removeClass('waiting');
+
+                    setTimeout(() => {
+                        elevator.css('background-color', 'black');
+                        button.text('Call').removeClass('arrived').addClass('call-button');
+                        processElevatorCall(); // Process next call if exists
+                    }, 2000);
+                }
+            });
+        }
+
+        function makeSound() {
+            // Sound logic here (e.g., play an audio file)
+            console.log('Ding! Elevator arrived.');
+        }
+    </script>
+</body>
+</html>
